@@ -4,12 +4,18 @@ import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+import android.webkit.WebResourceError;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 import static api.gliger.glg.instaoauth.Utill.INSTA_BASE_URL;
 import static api.gliger.glg.instaoauth.Utill.INSTA_CLIENT_ID;
@@ -20,7 +26,9 @@ public class InstaAuthDialog extends Dialog {
     private Context context;
     private WebView webView;
     private ProgressBar progressBar;
-    private RelativeLayout frameLayout;
+    private RelativeLayout frameLayout, errorLayout;
+    private TextView errorText;
+    private Button btnClose;
 
     private final String url = INSTA_BASE_URL
             + "oauth/authorize/?client_id="
@@ -40,8 +48,22 @@ public class InstaAuthDialog extends Dialog {
         super.onCreate(savedInstanceState);
         this.setContentView(R.layout.insta_auth_dialog);
 
-        frameLayout = findViewById(R.id.frame);
+        initComponents();
         initializeWebView();
+    }
+
+    private void initComponents() {
+        frameLayout = findViewById(R.id.frame);
+        errorText = findViewById(R.id.error_message);
+        errorLayout = findViewById(R.id.error_layout);
+        btnClose = findViewById(R.id.btn_close);
+
+        btnClose.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                dismiss();
+            }
+        });
     }
 
 
@@ -51,7 +73,6 @@ public class InstaAuthDialog extends Dialog {
         webView.loadUrl(url);
         webView.getSettings().setJavaScriptEnabled(true);
         webView.clearCache(true);
-
 
         webView.setWebViewClient(new WebViewClient(){
 
@@ -63,7 +84,6 @@ public class InstaAuthDialog extends Dialog {
                 stopProgress();
                 super.onPageStarted(view, url, favicon);
             }
-
 
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
@@ -78,13 +98,25 @@ public class InstaAuthDialog extends Dialog {
                     new InstaNet(accessToken,authListener).execute();
 
                 } else if (url.contains("?error")) {
-                    dismiss();
+                    setError("Oops!\nSomething went wrong");
                 } else if(url.equals("https://www.instagram.com/")){
                     stopProgress();
                     initializeWebView();
                 }
 
                 return super.shouldOverrideUrlLoading(view, url);
+            }
+
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                super.onReceivedError(view, request, error);
+                setError("No data network detected.\nPlease turn on internet services.");
+            }
+
+            @Override
+            public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
+                super.onReceivedHttpError(view, request, errorResponse);
+                setError("Oops!\nSomething went wrong");
             }
         });
 
@@ -103,5 +135,17 @@ public class InstaAuthDialog extends Dialog {
             progressBar.setVisibility(View.GONE);
             frameLayout.removeView(progressBar);
         }
+    }
+
+    private void setError(String error){
+        errorLayout.setVisibility(View.VISIBLE);
+        webView.setVisibility(View.GONE);
+        errorText.setText(error);
+        setCancelable(false);
+    }
+
+    private void dismissError(){
+        errorLayout.setVisibility(View.GONE);
+        webView.setVisibility(View.VISIBLE);
     }
 }

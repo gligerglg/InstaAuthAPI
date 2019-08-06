@@ -5,5 +5,5 @@ import api.gliger.glg.instaoauth.model.Profile;
 public interface InstaAuthListener {
     void onTokenReceived(String token);
     void onProfileReceived(Profile profile);
-    void onErrorOccured(String error);
+    void onErrorOccurred(String error);
 }
