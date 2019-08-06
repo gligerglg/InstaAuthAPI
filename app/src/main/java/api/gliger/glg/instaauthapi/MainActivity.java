@@ -5,12 +5,15 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
 import api.gliger.glg.instaoauth.InstaAuthDialog;
-import api.gliger.glg.instaoauth.InstaAuthListener;
 import api.gliger.glg.instaoauth.api.InstaAuthAPI;
 import api.gliger.glg.instaoauth.api.InstagramLogInHandler;
+import api.gliger.glg.instaoauth.api.InstagramLogoutHandler;
+import api.gliger.glg.instaoauth.api.InstagramProfileHandler;
+import api.gliger.glg.instaoauth.api.InstagramSessionManager;
 import api.gliger.glg.instaoauth.model.Profile;
+import api.gliger.glg.instaoauth.model.Session;
 
-public class MainActivity extends AppCompatActivity implements InstaAuthListener {
+public class MainActivity extends AppCompatActivity {
 
 
     @Override
@@ -20,11 +23,10 @@ public class MainActivity extends AppCompatActivity implements InstaAuthListener
     }
 
     public void login(View view) {
-        InstaAuthDialog authDialog = new InstaAuthDialog(MainActivity.this, this);
-        authDialog.setCancelable(true);
-        authDialog.show();
 
-        InstaAuthAPI authAPI  = new InstaAuthAPI();
+        InstaAuthAPI authAPI  = new InstaAuthAPI(getApplicationContext(),"","",true,null,true);
+
+        //Login
         authAPI.logIn(new InstagramLogInHandler() {
             @Override
             public void onLogInSuccess(String token) {
@@ -36,21 +38,27 @@ public class MainActivity extends AppCompatActivity implements InstaAuthListener
 
             }
         });
-    }
 
-    @Override
-    public void onTokenReceived(String token) {
-//        Toast.makeText(getApplicationContext(),token,Toast.LENGTH_LONG).show();
-    }
+        //getProfile Data
+        authAPI.getProfileData(new InstagramProfileHandler() {
+            @Override
+            public void onProfileDataReceived(Profile profile) {
 
-    @Override
-    public void onProfileReceived(Profile profile) {
+            }
 
-    }
+            @Override
+            public void onErrorOccurred(String error) {
 
-    @Override
-    public void onErrorOccurred(String error) {
+            }
 
+
+        });
+
+        //getSession
+        authAPI.getSessionData();
+
+        //logout
+        authAPI.logOut();
     }
 
 }

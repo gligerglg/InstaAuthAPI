@@ -4,5 +4,5 @@ import api.gliger.glg.instaoauth.model.Profile;
 
 public interface InstagramProfileHandler {
     void onProfileDataReceived(Profile profile);
-    void onErrorOccurred();
+    void onErrorOccurred(String error);
 }

@@ -10,6 +10,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import api.gliger.glg.instaoauth.api.InstagramProfileHandler;
 import api.gliger.glg.instaoauth.model.Count;
 import api.gliger.glg.instaoauth.model.Profile;
 
@@ -20,13 +21,17 @@ public class InstaNet extends AsyncTask<Void, String, Profile> {
     public static final String REQUEST_METHOD = "GET";
     public static final int READ_TIMEOUT = 15000;
     public static final int CONNECTION_TIMEOUT = 15000;
+    private InstagramProfileHandler instagramProfileHandler;
+    private SharedRepository sharedRepository;
+    private InstaNetHandler instaNetHandler;
 
     private String token;
-    private InstaAuthListener listener;
 
-    public InstaNet(String token, InstaAuthListener listener) {
+    public InstaNet(String token, InstagramProfileHandler profileHandler,SharedRepository sharedRepository,InstaNetHandler instaNetHandler) {
         this.token = token;
-        this.listener = listener;
+        this.instagramProfileHandler = profileHandler;
+        this.sharedRepository = sharedRepository;
+        this.instaNetHandler = instaNetHandler;
     }
 
 
@@ -80,7 +85,8 @@ public class InstaNet extends AsyncTask<Void, String, Profile> {
 
 
         }catch (Exception w){
-
+            instagramProfileHandler.onErrorOccurred(w.getMessage());
+            instaNetHandler.onErrorOccurred();
         }
 
         return result;
@@ -88,7 +94,10 @@ public class InstaNet extends AsyncTask<Void, String, Profile> {
 
     @Override
     protected void onPostExecute(Profile response) {
-        listener.onProfileReceived(response);
+        //Profile response
+        instagramProfileHandler.onProfileDataReceived(response);
+        instaNetHandler.onRequestSuccess();
+        sharedRepository.saveProfile(response);
         super.onPostExecute(response);
     }
 }

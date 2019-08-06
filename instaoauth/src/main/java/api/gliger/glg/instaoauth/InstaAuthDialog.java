@@ -17,18 +17,27 @@ import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import api.gliger.glg.instaoauth.api.InstagramLogInHandler;
+import api.gliger.glg.instaoauth.api.InstagramLogoutHandler;
+import api.gliger.glg.instaoauth.api.InstagramProfileHandler;
+import api.gliger.glg.instaoauth.api.InstagramSessionManager;
+
 import static api.gliger.glg.instaoauth.Utill.INSTA_BASE_URL;
 import static api.gliger.glg.instaoauth.Utill.INSTA_CLIENT_ID;
 import static api.gliger.glg.instaoauth.Utill.INSTA_REDIRECT_URI;
 
-public class InstaAuthDialog extends Dialog {
-    private InstaAuthListener authListener;
+public class InstaAuthDialog extends Dialog{
     private Context context;
     private WebView webView;
     private ProgressBar progressBar;
     private RelativeLayout frameLayout, errorLayout;
     private TextView errorText;
     private Button btnClose;
+    private SharedRepository sharedRepository;
+    private boolean redirectOnSuccess;
+
+    private InstagramLogInHandler instagramLogInHandler;
+    private InstagramProfileHandler instagramProfileHandler;
 
     private final String url = INSTA_BASE_URL
             + "oauth/authorize/?client_id="
@@ -37,11 +46,27 @@ public class InstaAuthDialog extends Dialog {
             + INSTA_REDIRECT_URI
             + "&response_type=token";
 
-    public InstaAuthDialog(Context context, InstaAuthListener authListener) {
+    public static final int MODE_PROFILE=0;
+    public static final int MODE_LOGIN=1;
+    private int SELECTED_MODE=-1;
+
+    public InstaAuthDialog(Context context, InstagramLogInHandler logInHandler,boolean redirectOnSuccess) {
         super(context);
-        this.authListener = authListener;
         this.context = context;
+        this.instagramLogInHandler = logInHandler;
+        this.SELECTED_MODE = MODE_LOGIN;
+        this.redirectOnSuccess = redirectOnSuccess;
     }
+
+
+    public InstaAuthDialog(Context context, InstagramProfileHandler profileHandler,boolean redirectOnSuccess) {
+        super(context);
+        this.context = context;
+        this.instagramProfileHandler = profileHandler;
+        this.SELECTED_MODE = MODE_PROFILE;
+        this.redirectOnSuccess = redirectOnSuccess;
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,7 +74,20 @@ public class InstaAuthDialog extends Dialog {
         this.setContentView(R.layout.insta_auth_dialog);
 
         initComponents();
-        initializeWebView();
+        route(SELECTED_MODE);
+    }
+
+    private void route(int selected_mode) {
+        switch (selected_mode){
+            case MODE_LOGIN:
+                initializeWebView(MODE_LOGIN);
+
+                break;
+
+            case MODE_PROFILE:
+                initializeWebView(MODE_PROFILE);
+                break;
+        }
     }
 
     private void initComponents() {
@@ -57,6 +95,7 @@ public class InstaAuthDialog extends Dialog {
         errorText = findViewById(R.id.error_message);
         errorLayout = findViewById(R.id.error_layout);
         btnClose = findViewById(R.id.btn_close);
+        sharedRepository = SharedRepository.getInstance(context);
 
         btnClose.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -67,7 +106,7 @@ public class InstaAuthDialog extends Dialog {
     }
 
 
-    private void initializeWebView() {
+    private boolean initializeWebView(final int selected_mode) {
         startProgress();
         webView = findViewById(R.id.insta_webView);
         webView.loadUrl(url);
@@ -92,16 +131,36 @@ public class InstaAuthDialog extends Dialog {
                     Uri uri = Uri.parse(url);
                     accessToken = uri.getEncodedFragment();
                     accessToken = accessToken.substring(accessToken.lastIndexOf("=")+1);
-                    authListener.onTokenReceived(accessToken);
                     authComplete = true;
 
-                    new InstaNet(accessToken,authListener).execute();
+                    if(selected_mode==MODE_LOGIN && instagramLogInHandler!=null && accessToken!=null){
+                        instagramLogInHandler.onLogInSuccess(accessToken);
+                        sharedRepository.saveToken(accessToken);
+
+                        if(!redirectOnSuccess)
+                            dismiss();
+                        return true;
+                    }else if(selected_mode==MODE_PROFILE && instagramProfileHandler!=null && accessToken!=null) {
+
+                        new InstaNet(accessToken, instagramProfileHandler, sharedRepository, new InstaNetHandler() {
+                            @Override
+                            public void onRequestSuccess() {
+                                if (!redirectOnSuccess)
+                                    dismiss();
+                            }
+
+                            @Override
+                            public void onErrorOccurred() {
+                                setError("Oops!\nSomething went wrong");
+                            }
+                        }).execute();
+                    }
 
                 } else if (url.contains("?error")) {
                     setError("Oops!\nSomething went wrong");
                 } else if(url.equals("https://www.instagram.com/")){
                     stopProgress();
-                    initializeWebView();
+                    initializeWebView(selected_mode);
                 }
 
                 return super.shouldOverrideUrlLoading(view, url);
@@ -119,6 +178,8 @@ public class InstaAuthDialog extends Dialog {
                 setError("Oops!\nSomething went wrong");
             }
         });
+
+        return true;
 
     }
 
@@ -148,4 +209,5 @@ public class InstaAuthDialog extends Dialog {
         errorLayout.setVisibility(View.GONE);
         webView.setVisibility(View.VISIBLE);
     }
+
 }
