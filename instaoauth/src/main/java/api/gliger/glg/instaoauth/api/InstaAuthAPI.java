@@ -53,12 +53,21 @@ public class InstaAuthAPI {
         }
     }
 
-    public static void getDefaultClient(Context context,InstagramSessionHandler instagramSessionHandler){
+    public boolean isSessionAvailable(){
+        return sharedRepository.isLoggedIn();
+    }
+
+    public static void getDefaultSession(Context context, InstagramSessionHandler instagramSessionHandler){
         SharedRepository sharedRepository = SharedRepository.getInstance(context);
         if(sharedRepository.isLoggedIn())
             instagramSessionHandler.onProfileDataReceived(sharedRepository.getProfile());
         else
             instagramSessionHandler.onErrorOccurred("Session has expired");
+    }
+
+    public static boolean isSessionAvailable(Context context){
+        SharedRepository sharedRepository = SharedRepository.getInstance(context);
+        return sharedRepository.isLoggedIn();
     }
 
     public void getProfileData(InstagramSessionHandler logInHandler) {
@@ -77,6 +86,13 @@ public class InstaAuthAPI {
 
     public void logOut() {
         sharedRepository.invalidate();
+    }
+
+    public static void logOut(Context context){
+        try {
+            SharedRepository sharedRepository = SharedRepository.getInstance(context);
+            sharedRepository.invalidate();
+        }catch (Exception e){}
     }
 
     public static class Builder {

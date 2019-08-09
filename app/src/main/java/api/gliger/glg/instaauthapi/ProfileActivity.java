@@ -1,7 +1,9 @@
 package api.gliger.glg.instaauthapi;
 
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Toast;
 
 import api.gliger.glg.instaoauth.api.InstaAuthAPI;
@@ -15,7 +17,7 @@ public class ProfileActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
 
-        InstaAuthAPI.getDefaultClient(this,new InstagramSessionHandler() {
+        InstaAuthAPI.getDefaultSession(this,new InstagramSessionHandler() {
             @Override
             public void onProfileDataReceived(Profile profile) {
                 Toast.makeText(getApplicationContext(),profile.getFullName(),Toast.LENGTH_LONG).show();
@@ -26,5 +28,12 @@ public class ProfileActivity extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(),error,Toast.LENGTH_LONG).show();
             }
         });
+
+    }
+
+    public void logout(View view) {
+        InstaAuthAPI.logOut(this);
+        startActivity(new Intent(this,MainActivity.class));
+        finish();
     }
 }

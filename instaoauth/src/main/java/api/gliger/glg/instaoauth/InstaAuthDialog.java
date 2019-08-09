@@ -98,8 +98,8 @@ public class InstaAuthDialog extends Dialog {
         webView.getSettings().setJavaScriptEnabled(true);
         webView.clearCache(true);
 
-        /*if (!sharedRepository.isLoggedIn())
-            removeSessionCookies();*/
+        if (!sharedRepository.isLoggedIn())
+            removeSessionCookies();
 
         webView.setWebViewClient(new WebViewClient() {
 

@@ -24,6 +24,12 @@ public class MainActivity extends AppCompatActivity {
                 .setRedirectURL("https://gligerglg.github.io")
                 .setRedirectOnSuccess(true)
                 .build();
+
+        if(authAPI.isSessionAvailable()) {
+            startActivity(new Intent(MainActivity.this, ProfileActivity.class));
+            finish();
+        }
+
     }
 
     public void login(View view){
