@@ -5,7 +5,6 @@ import android.content.SharedPreferences;
 
 import api.gliger.glg.instaoauth.model.Count;
 import api.gliger.glg.instaoauth.model.Profile;
-import api.gliger.glg.instaoauth.model.Session;
 
 public class SharedRepository {
     private static SharedPreferences sharedPreferences;
@@ -18,18 +17,10 @@ public class SharedRepository {
             mContext = context;
             sharedPreferences = mContext.getSharedPreferences(Utill.INSTA_SHARED_DB, Context.MODE_PRIVATE);
             editor = sharedPreferences.edit();
+            instance = new SharedRepository();
         }
 
         return instance;
-    }
-
-    public void saveToken(String token) {
-        editor.putString(Utill.INSTA_TOKEN, Utill.INSTA_DATA_NULL_STRING);
-        editor.commit();
-    }
-
-    public String getToken() {
-        return sharedPreferences.getString(Utill.INSTA_TOKEN, Utill.INSTA_DATA_NULL_STRING);
     }
 
     public void saveProfile(Profile profile) {
@@ -66,19 +57,7 @@ public class SharedRepository {
         return profile;
     }
 
-    public void saveSession(Session session) {
-        saveToken(session.getToken());
-        saveProfile(session.getProfile());
-    }
-
-    public Session getSession() {
-        Session session = new Session();
-        session.setProfile(getProfile());
-        session.setToken(getToken());
-        return session;
-    }
-
-    public void invalidate(){
+    public void invalidate() {
         try {
             editor.remove(Utill.INSTA_PROFILE_MEDIA);
             editor.remove(Utill.INSTA_PROFILE_FOLLOWS);
@@ -90,11 +69,20 @@ public class SharedRepository {
             editor.remove(Utill.INSTA_PROFILE_BIO);
             editor.remove(Utill.INSTA_PROFILE_WEBSITE);
             editor.remove(Utill.INSTA_PROFILE_BUSINESS);
-        }catch (Exception e){}
+            editor.commit();
+        } catch (Exception e) {
+        }
     }
 
-    public boolean isLoggedIn(){
-        return !getToken().isEmpty();
+    public boolean isLoggedIn() {
+        try {
+            if (!getProfile().getId().equals(Utill.INSTA_DATA_NULL_STRING) || !getProfile().getId().isEmpty())
+                return true;
+        } catch (Exception e) {
+            return false;
+        }
+
+        return false;
     }
 
 }

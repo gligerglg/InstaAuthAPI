@@ -7,6 +7,8 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+import android.webkit.CookieManager;
+import android.webkit.CookieSyncManager;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
@@ -17,16 +19,19 @@ import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import api.gliger.glg.instaoauth.api.InstagramLogInHandler;
-import api.gliger.glg.instaoauth.api.InstagramLogoutHandler;
-import api.gliger.glg.instaoauth.api.InstagramProfileHandler;
-import api.gliger.glg.instaoauth.api.InstagramSessionManager;
+import api.gliger.glg.instaoauth.api.InstagramSessionHandler;
 
 import static api.gliger.glg.instaoauth.Utill.INSTA_BASE_URL;
 import static api.gliger.glg.instaoauth.Utill.INSTA_CLIENT_ID;
 import static api.gliger.glg.instaoauth.Utill.INSTA_REDIRECT_URI;
 
-public class InstaAuthDialog extends Dialog{
+public class InstaAuthDialog extends Dialog {
+    private final String url = INSTA_BASE_URL
+            + "oauth/authorize/?client_id="
+            + INSTA_CLIENT_ID
+            + "&redirect_uri="
+            + INSTA_REDIRECT_URI
+            + "&response_type=token";
     private Context context;
     private WebView webView;
     private ProgressBar progressBar;
@@ -35,35 +40,12 @@ public class InstaAuthDialog extends Dialog{
     private Button btnClose;
     private SharedRepository sharedRepository;
     private boolean redirectOnSuccess;
+    private InstagramSessionHandler instagramSessionHandler;
 
-    private InstagramLogInHandler instagramLogInHandler;
-    private InstagramProfileHandler instagramProfileHandler;
-
-    private final String url = INSTA_BASE_URL
-            + "oauth/authorize/?client_id="
-            + INSTA_CLIENT_ID
-            + "&redirect_uri="
-            + INSTA_REDIRECT_URI
-            + "&response_type=token";
-
-    public static final int MODE_PROFILE=0;
-    public static final int MODE_LOGIN=1;
-    private int SELECTED_MODE=-1;
-
-    public InstaAuthDialog(Context context, InstagramLogInHandler logInHandler,boolean redirectOnSuccess) {
+    public InstaAuthDialog(Context context, InstagramSessionHandler logInHandler, boolean redirectOnSuccess) {
         super(context);
         this.context = context;
-        this.instagramLogInHandler = logInHandler;
-        this.SELECTED_MODE = MODE_LOGIN;
-        this.redirectOnSuccess = redirectOnSuccess;
-    }
-
-
-    public InstaAuthDialog(Context context, InstagramProfileHandler profileHandler,boolean redirectOnSuccess) {
-        super(context);
-        this.context = context;
-        this.instagramProfileHandler = profileHandler;
-        this.SELECTED_MODE = MODE_PROFILE;
+        this.instagramSessionHandler = logInHandler;
         this.redirectOnSuccess = redirectOnSuccess;
     }
 
@@ -74,21 +56,9 @@ public class InstaAuthDialog extends Dialog{
         this.setContentView(R.layout.insta_auth_dialog);
 
         initComponents();
-        route(SELECTED_MODE);
+        initializeWebView();
     }
 
-    private void route(int selected_mode) {
-        switch (selected_mode){
-            case MODE_LOGIN:
-                initializeWebView(MODE_LOGIN);
-
-                break;
-
-            case MODE_PROFILE:
-                initializeWebView(MODE_PROFILE);
-                break;
-        }
-    }
 
     private void initComponents() {
         frameLayout = findViewById(R.id.frame);
@@ -105,15 +75,33 @@ public class InstaAuthDialog extends Dialog{
         });
     }
 
+    private void removeSessionCookies() {
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
+            CookieManager.getInstance().removeAllCookies(null);
+            CookieManager.getInstance().flush();
+        } else {
+            CookieSyncManager cookieSyncMngr = CookieSyncManager.createInstance(context);
+            cookieSyncMngr.startSync();
+            CookieManager cookieManager = CookieManager.getInstance();
+            cookieManager.removeAllCookie();
+            cookieManager.removeSessionCookie();
+            cookieSyncMngr.stopSync();
+            cookieSyncMngr.sync();
+        }
+    }
 
-    private boolean initializeWebView(final int selected_mode) {
+
+    private boolean initializeWebView() {
         startProgress();
         webView = findViewById(R.id.insta_webView);
         webView.loadUrl(url);
         webView.getSettings().setJavaScriptEnabled(true);
         webView.clearCache(true);
 
-        webView.setWebViewClient(new WebViewClient(){
+        /*if (!sharedRepository.isLoggedIn())
+            removeSessionCookies();*/
+
+        webView.setWebViewClient(new WebViewClient() {
 
             boolean authComplete = false;
             String accessToken;
@@ -130,19 +118,12 @@ public class InstaAuthDialog extends Dialog{
                     stopProgress();
                     Uri uri = Uri.parse(url);
                     accessToken = uri.getEncodedFragment();
-                    accessToken = accessToken.substring(accessToken.lastIndexOf("=")+1);
+                    accessToken = accessToken.substring(accessToken.lastIndexOf("=") + 1);
                     authComplete = true;
 
-                    if(selected_mode==MODE_LOGIN && instagramLogInHandler!=null && accessToken!=null){
-                        instagramLogInHandler.onLogInSuccess(accessToken);
-                        sharedRepository.saveToken(accessToken);
+                    if (instagramSessionHandler != null && accessToken != null) {
 
-                        if(!redirectOnSuccess)
-                            dismiss();
-                        return true;
-                    }else if(selected_mode==MODE_PROFILE && instagramProfileHandler!=null && accessToken!=null) {
-
-                        new InstaNet(accessToken, instagramProfileHandler, sharedRepository, new InstaNetHandler() {
+                        new InstaNet(accessToken, instagramSessionHandler, sharedRepository, new InstaNetHandler() {
                             @Override
                             public void onRequestSuccess() {
                                 if (!redirectOnSuccess)
@@ -151,16 +132,16 @@ public class InstaAuthDialog extends Dialog{
 
                             @Override
                             public void onErrorOccurred() {
-                                setError("Oops!\nSomething went wrong");
+                                setError(Utill.ERROR_OOPS);
                             }
                         }).execute();
                     }
 
                 } else if (url.contains("?error")) {
-                    setError("Oops!\nSomething went wrong");
-                } else if(url.equals("https://www.instagram.com/")){
+                    setError(Utill.ERROR_OOPS);
+                } else if (url.equals("https://www.instagram.com/")) {
                     stopProgress();
-                    initializeWebView(selected_mode);
+                    initializeWebView();
                 }
 
                 return super.shouldOverrideUrlLoading(view, url);
@@ -169,13 +150,17 @@ public class InstaAuthDialog extends Dialog{
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 super.onReceivedError(view, request, error);
-                setError("No data network detected.\nPlease turn on internet services.");
+                setError(Utill.ERROR_CONNECTION);
+                if (instagramSessionHandler != null)
+                    instagramSessionHandler.onErrorOccurred(Utill.ERROR_CONNECTION);
             }
 
             @Override
             public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
                 super.onReceivedHttpError(view, request, errorResponse);
-                setError("Oops!\nSomething went wrong");
+                setError(Utill.ERROR_OOPS);
+                if (instagramSessionHandler != null)
+                    instagramSessionHandler.onErrorOccurred(Utill.ERROR_CREDENTIAL);
             }
         });
 
@@ -183,31 +168,26 @@ public class InstaAuthDialog extends Dialog{
 
     }
 
-    private void startProgress(){
+    private void startProgress() {
         progressBar = new ProgressBar(context);
         progressBar.setIndeterminate(true);
-        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(100,100);
+        progressBar.getIndeterminateDrawable().setColorFilter(0xc7c7c7c7, android.graphics.PorterDuff.Mode.MULTIPLY);
+        RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(150, 150);
         params.addRule(RelativeLayout.CENTER_IN_PARENT);
-        frameLayout.addView(progressBar,params);
+        frameLayout.addView(progressBar, params);
     }
 
-    private void stopProgress(){
-        if(progressBar!=null){
+    private void stopProgress() {
+        if (progressBar != null) {
             progressBar.setVisibility(View.GONE);
             frameLayout.removeView(progressBar);
         }
     }
 
-    private void setError(String error){
+    private void setError(String error) {
         errorLayout.setVisibility(View.VISIBLE);
         webView.setVisibility(View.GONE);
         errorText.setText(error);
-        setCancelable(false);
-    }
-
-    private void dismissError(){
-        errorLayout.setVisibility(View.GONE);
-        webView.setVisibility(View.VISIBLE);
     }
 
 }

@@ -1,7 +1,6 @@
 package api.gliger.glg.instaoauth;
 
 import android.os.AsyncTask;
-import android.widget.ProgressBar;
 
 import org.json.JSONObject;
 
@@ -10,26 +9,25 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-import api.gliger.glg.instaoauth.api.InstagramProfileHandler;
+import api.gliger.glg.instaoauth.api.InstagramSessionHandler;
 import api.gliger.glg.instaoauth.model.Count;
 import api.gliger.glg.instaoauth.model.Profile;
 
 public class InstaNet extends AsyncTask<Void, String, Profile> {
 
-    private final String userInfo = "https://api.instagram.com/v1/users/self/?access_token=";
-
     public static final String REQUEST_METHOD = "GET";
     public static final int READ_TIMEOUT = 15000;
     public static final int CONNECTION_TIMEOUT = 15000;
-    private InstagramProfileHandler instagramProfileHandler;
+    private final String userInfo = "https://api.instagram.com/v1/users/self/?access_token=";
+    private InstagramSessionHandler instagramSessionHandler;
     private SharedRepository sharedRepository;
     private InstaNetHandler instaNetHandler;
 
     private String token;
 
-    public InstaNet(String token, InstagramProfileHandler profileHandler,SharedRepository sharedRepository,InstaNetHandler instaNetHandler) {
+    public InstaNet(String token, InstagramSessionHandler profileHandler, SharedRepository sharedRepository, InstaNetHandler instaNetHandler) {
         this.token = token;
-        this.instagramProfileHandler = profileHandler;
+        this.instagramSessionHandler = profileHandler;
         this.sharedRepository = sharedRepository;
         this.instaNetHandler = instaNetHandler;
     }
@@ -37,11 +35,11 @@ public class InstaNet extends AsyncTask<Void, String, Profile> {
 
     @Override
     protected Profile doInBackground(Void... voids) {
-        String inputLine,jsonString;
+        String inputLine, jsonString;
         Profile result = new Profile();
 
         try {
-            URL url = new URL(userInfo+token);
+            URL url = new URL(userInfo + token);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
             //Set methods and timeouts
@@ -58,7 +56,7 @@ public class InstaNet extends AsyncTask<Void, String, Profile> {
             BufferedReader reader = new BufferedReader(streamReader);
             StringBuilder stringBuilder = new StringBuilder();
             //Check if the line we are reading is not null
-            while((inputLine = reader.readLine()) != null){
+            while ((inputLine = reader.readLine()) != null) {
                 stringBuilder.append(inputLine);
             }
 
@@ -84,8 +82,8 @@ public class InstaNet extends AsyncTask<Void, String, Profile> {
             result = profile;
 
 
-        }catch (Exception w){
-            instagramProfileHandler.onErrorOccurred(w.getMessage());
+        } catch (Exception w) {
+            instagramSessionHandler.onErrorOccurred(w.getMessage());
             instaNetHandler.onErrorOccurred();
         }
 
@@ -95,7 +93,7 @@ public class InstaNet extends AsyncTask<Void, String, Profile> {
     @Override
     protected void onPostExecute(Profile response) {
         //Profile response
-        instagramProfileHandler.onProfileDataReceived(response);
+        instagramSessionHandler.onProfileDataReceived(response);
         instaNetHandler.onRequestSuccess();
         sharedRepository.saveProfile(response);
         super.onPostExecute(response);

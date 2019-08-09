@@ -1,37 +1,24 @@
 package api.gliger.glg.instaauthapi;
 
-import android.content.Intent;
-import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.view.View;
+import android.os.Bundle;
 import android.widget.Toast;
 
 import api.gliger.glg.instaoauth.api.InstaAuthAPI;
 import api.gliger.glg.instaoauth.api.InstagramSessionHandler;
 import api.gliger.glg.instaoauth.model.Profile;
 
-public class MainActivity extends AppCompatActivity {
-
-    private InstaAuthAPI authAPI;
+public class ProfileActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_profile);
 
-        authAPI = new InstaAuthAPI.Builder(this)
-                .setClientId("f4c86a13bfc34efeb97f6770874c1176")
-                .setRedirectURL("https://gligerglg.github.io")
-                .setRedirectOnSuccess(true)
-                .build();
-    }
-
-    public void login(View view){
-        authAPI.logIn(new InstagramSessionHandler() {
+        InstaAuthAPI.getDefaultClient(this,new InstagramSessionHandler() {
             @Override
             public void onProfileDataReceived(Profile profile) {
-                startActivity(new Intent(MainActivity.this,ProfileActivity.class));
-                finish();
+                Toast.makeText(getApplicationContext(),profile.getFullName(),Toast.LENGTH_LONG).show();
             }
 
             @Override
@@ -40,5 +27,4 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
 }
