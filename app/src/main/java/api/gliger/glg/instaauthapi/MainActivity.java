@@ -20,8 +20,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         authAPI = new InstaAuthAPI.Builder(this)
-                .setClientId("f4c86a13bfc34efeb97f6770874c1176")
-                .setRedirectURL("https://gligerglg.github.io")
+                .setClientId("ENTER_YOUR_CLIENT_ID_HERE")
+                .setRedirectURL("ENTER_YOUR_REDIRECT_URL_HERE")
                 .setRedirectOnSuccess(true)
                 .build();
 
@@ -29,7 +29,6 @@ public class MainActivity extends AppCompatActivity {
             startActivity(new Intent(MainActivity.this, ProfileActivity.class));
             finish();
         }
-
     }
 
     public void login(View view){
