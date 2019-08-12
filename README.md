@@ -2,8 +2,6 @@
 ## Instagram login and Session management library for android developers
 
 ![Login UI](https://github.com/gligerglg/InstaAuthAPI/blob/master/login.png)
-![Session UI](https://github.com/gligerglg/InstaAuthAPI/blob/master/session.png)
-![Error UI](https://github.com/gligerglg/InstaAuthAPI/blob/master/error.png)
 
 ## Setup
 ### 1.Project Gradle
