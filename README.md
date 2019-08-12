@@ -1,7 +1,9 @@
 # InstaAuthAPI  [![](https://jitpack.io/v/gligerglg/InstaAuthAPI.svg)](https://jitpack.io/#gligerglg/InstaAuthAPI)
 ## Instagram login and Session management library for android developers
 
-![alt text](https://github.com/gligerglg/InstaAuthAPI/master/login.png)
+![Login UI](https://github.com/gligerglg/InstaAuthAPI/blob/master/login.png)
+![Session UI](https://github.com/gligerglg/InstaAuthAPI/blob/master/session.png)
+![Error UI](https://github.com/gligerglg/InstaAuthAPI/blob/master/error.png)
 
 ## Setup
 ### 1.Project Gradle
