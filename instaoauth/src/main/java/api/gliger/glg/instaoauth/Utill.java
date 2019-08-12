@@ -24,5 +24,6 @@ public class Utill {
     public static final String ERROR_CONNECTION = "No data network detected.\nPlease turn on internet services.";
     public static final String ERROR_OOPS = "Oops!\nSomething went wrong";
     public static final String ERROR_CREDENTIAL = "Please Check Credential";
+    public static final String ERROR_SESSION_EXPIRE = "Session has expired";
 
 }

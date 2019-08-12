@@ -3,7 +3,6 @@ package api.gliger.glg.instaoauth.api;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.support.v7.app.AlertDialog;
-import android.view.View;
 
 import api.gliger.glg.instaoauth.InstaAuthDialog;
 import api.gliger.glg.instaoauth.SharedRepository;
@@ -27,6 +26,27 @@ public class InstaAuthAPI {
         this.redirectURL = redirectURL;
         this.redirectOnSuccess = redirectOnSuccess;
         this.sharedRepository = SharedRepository.getInstance(context);
+    }
+
+    public static void getDefaultSession(Context context, InstagramSessionHandler instagramSessionHandler) {
+        SharedRepository sharedRepository = SharedRepository.getInstance(context);
+        if (sharedRepository.isLoggedIn())
+            instagramSessionHandler.onProfileDataReceived(sharedRepository.getProfile());
+        else
+            instagramSessionHandler.onErrorOccurred(Utill.ERROR_SESSION_EXPIRE);
+    }
+
+    public static boolean isSessionAvailable(Context context) {
+        SharedRepository sharedRepository = SharedRepository.getInstance(context);
+        return sharedRepository.isLoggedIn();
+    }
+
+    public static void logOut(Context context) {
+        try {
+            SharedRepository sharedRepository = SharedRepository.getInstance(context);
+            sharedRepository.invalidate();
+        } catch (Exception e) {
+        }
     }
 
     public void logIn(InstagramSessionHandler logInHandler) {
@@ -53,20 +73,7 @@ public class InstaAuthAPI {
         }
     }
 
-    public boolean isSessionAvailable(){
-        return sharedRepository.isLoggedIn();
-    }
-
-    public static void getDefaultSession(Context context, InstagramSessionHandler instagramSessionHandler){
-        SharedRepository sharedRepository = SharedRepository.getInstance(context);
-        if(sharedRepository.isLoggedIn())
-            instagramSessionHandler.onProfileDataReceived(sharedRepository.getProfile());
-        else
-            instagramSessionHandler.onErrorOccurred("Session has expired");
-    }
-
-    public static boolean isSessionAvailable(Context context){
-        SharedRepository sharedRepository = SharedRepository.getInstance(context);
+    public boolean isSessionAvailable() {
         return sharedRepository.isLoggedIn();
     }
 
@@ -83,16 +90,8 @@ public class InstaAuthAPI {
         }
     }
 
-
     public void logOut() {
         sharedRepository.invalidate();
-    }
-
-    public static void logOut(Context context){
-        try {
-            SharedRepository sharedRepository = SharedRepository.getInstance(context);
-            sharedRepository.invalidate();
-        }catch (Exception e){}
     }
 
     public static class Builder {
@@ -118,7 +117,7 @@ public class InstaAuthAPI {
             return this;
         }
 
-                public Builder setRedirectOnSuccess(boolean redirectOnSuccess) {
+        public Builder setRedirectOnSuccess(boolean redirectOnSuccess) {
             this.redirectOnSuccess = redirectOnSuccess;
             return this;
         }
